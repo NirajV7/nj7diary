@@ -1,12 +1,12 @@
 "use client";
 import Header from "@/components/Header";
-import DailyLog from "@/components/DailyLog";
+import RememberThis from "@/components/RememberThis";
 
-export default function Home() {
+export default function RememberPage() {
   return (
     <div className="min-h-screen">
       <Header />
-      <DailyLog />
+      <RememberThis />
     </div>
   );
 }
