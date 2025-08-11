@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DiaryData, Mood } from "@/lib/types";
-import { addEntry, ensureDay, loadData, saveData, todayKey, deleteEntry, fetchData } from "@/lib/storage";
+import { addEntry, ensureDay, loadData, saveData, todayKey, deleteEntry, fetchData, defaultData } from "@/lib/storage";
 
 const MOODS: Mood[] = ["😊", "😐", "😠", "😴", "🚀", "🤔"];
 
 function formatDateHeading(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
-  return dt.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  // Use a fixed locale and UTC timezone to ensure SSR and client render identical output
+  return dt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 }
 
 function formatTime(iso: string) {
@@ -17,7 +18,8 @@ function formatTime(iso: string) {
 }
 
 export default function DailyLog() {
-  const [data, setData] = useState<DiaryData>(() => loadData());
+  // Initialize with defaultData to ensure SSR and client initial render match
+  const [data, setData] = useState<DiaryData>(() => defaultData());
   const [selectedDate, setSelectedDate] = useState<string>(() => todayKey());
   const [text, setText] = useState("");
   const [mood, setMood] = useState<Mood | undefined>(undefined);
@@ -25,15 +27,24 @@ export default function DailyLog() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Initial load from Firestore, ensure today exists
+  // Initial load: first hydrate from local cache, then fetch remote; ensure today exists
   useEffect(() => {
     let cancelled = false;
+
+    // Step 1: local cache (fast, matches client only after hydration)
+    const local = loadData();
+    const d1 = structuredClone(local);
+    ensureDay(d1, todayKey());
+    if (!cancelled) setData(d1);
+
+    // Step 2: remote fetch (may overwrite with latest)
     (async () => {
       const latest = await fetchData();
-      const d = structuredClone(latest);
-      ensureDay(d, todayKey());
-      if (!cancelled) setData(d);
+      const d2 = structuredClone(latest);
+      ensureDay(d2, todayKey());
+      if (!cancelled) setData(d2);
     })();
+
     return () => {
       cancelled = true;
     };

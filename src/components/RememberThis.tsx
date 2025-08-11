@@ -1,19 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
 import { DiaryData, Note } from "@/lib/types";
-import { addNote, deleteNote, loadData, saveData, updateNote, fetchData } from "@/lib/storage";
+import { addNote, deleteNote, loadData, saveData, updateNote, fetchData, defaultData } from "@/lib/storage";
 
 export default function RememberThis() {
-  const [data, setData] = useState<DiaryData>(() => loadData());
+  // Initialize with defaultData to ensure SSR and client initial render match
+  const [data, setData] = useState<DiaryData>(() => defaultData());
   const [draft, setDraft] = useState<{ title: string; content: string }>(() => ({ title: "", content: "" }));
 
-  // initial load from Firestore
+  // Initial load: hydrate from local cache, then fetch remote
   useEffect(() => {
     let cancelled = false;
+
+    // Step 1: local cache
+    const local = loadData();
+    if (!cancelled) setData(structuredClone(local));
+
+    // Step 2: remote fetch
     (async () => {
       const latest = await fetchData();
       if (!cancelled) setData(structuredClone(latest));
     })();
+
     return () => {
       cancelled = true;
     };
