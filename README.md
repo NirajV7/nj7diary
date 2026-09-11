@@ -2,6 +2,9 @@
 
 Personal logging notebook with a coding terminal aesthetic. Built with Next.js (App Router), Tailwind v4, and Firebase (Firestore). Logs and notes are persisted in Firestore.
 
+#contributors 
+Athul Muralidharan (athul8550) — contributed product ideas, feedback, and validation input during development.
+
 ## Local development
 
 1. Install deps
